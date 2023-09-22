@@ -1,0 +1,16 @@
+code/__pycache__/
+code/AutogluonModels/
+data/dta/davis/data_folds/
+data/dta/davis/features/
+data/dta/kiba/data_folds/
+data/dta/kiba/features/
+data/dti/hetionet/data_folds/
+data/dti/hetionet/features/
+data/dti/yamanishi_08/data_folds/
+data/dti/yamanishi_08/features/
+data/moa/activation/data_folds/
+data/moa/activation/features/
+data/moa/inhibition/data_folds/
+data/moa/inhibition/features/
+models/
+results/
