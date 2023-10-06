@@ -2,7 +2,7 @@
 
 The benchmark dataset described in this paper can be found in ./data/.
 
-The complement of the self-supervised molecular representation learning model BerMol can be found in ./code/BerMol/.
+The complement of the self-supervised molecular representation learning model BerMol can be found in ./code/BerMol/. [Download](https://drive.google.com/file/d/1ZW-PQXE4FvWHx77hkUA-JsqyJUb6B-NQ/view?usp=drive_link) the pre-trained model file.
 
 Before running the DTIAM model in ./code/, please first use ./code/data_prepare.sh to produce necessary files.
 
