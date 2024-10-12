@@ -11,6 +11,9 @@ from collections import OrderedDict
 
 
 def cal_comp_feat(data, model_path, device="cuda"):
+    """
+    Calculate the compound features using the compound pre-trained model
+    """
     with open(model_path, "rb") as f:
         comp_model = pickle.load(f)
         comp_model.model.to(device)
@@ -30,6 +33,9 @@ def cal_comp_feat(data, model_path, device="cuda"):
 
 
 def cal_prot_feat(data):
+    """
+    Calculate the protein features using the protein pre-trained model
+    """
     # model, alphabet = esm.pretrained.esm2_t30_150M_UR50D()
     model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
     model = model.cuda()

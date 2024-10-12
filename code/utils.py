@@ -7,6 +7,7 @@ from sklearn import metrics
 
 
 def load_data(data_path, fold_idx, comp_feat, prot_feat):
+    """Load training and testing data."""
     print("Loading data ...")
     train = pd.read_csv(data_path + "train_fold_" + str(fold_idx) + ".csv")
     test = pd.read_csv(data_path + "test_fold_" + str(fold_idx) + ".csv")
@@ -16,6 +17,7 @@ def load_data(data_path, fold_idx, comp_feat, prot_feat):
 
 
 def pack(data, comp_feat, prot_feat):
+    """Pack compound and protein features into a dataframe."""
     vecs = []
     for i in range(len(data)):
         cid, pid = data.iloc[i, :2]
@@ -26,38 +28,45 @@ def pack(data, comp_feat, prot_feat):
 
 
 def roc_auc(y, pred):
+    """Compute the ROC AUC score."""
     fpr, tpr, _ = metrics.roc_curve(y, pred)
     roc_auc = metrics.auc(fpr, tpr)
     return roc_auc
 
 
 def pr_auc(y, pred):
+    """Compute the Precision-Recall AUC score."""
     precision, recall, _ = metrics.precision_recall_curve(y, pred)
     pr_auc = metrics.auc(recall, precision)
     return pr_auc
 
 
 def rmse(y, f):
+    """Compute the Root Mean Squared Error."""
     rmse = sqrt(((y - f) ** 2).mean(axis=0))
     return rmse
 
 
 def mse(y, f):
+    """Compute the Mean Squared Error."""
     mse = ((y - f) ** 2).mean(axis=0)
     return mse
 
 
 def pearson(y, f):
+    """Compute the Pearson correlation coefficient."""
     rp = np.corrcoef(y, f)[0, 1]
     return rp
 
 
 def spearman(y, f):
+    """Compute the Spearman correlation coefficient."""
     rs = stats.spearmanr(y, f)[0]
     return rs
 
 
 def ci(y, f):
+    """Compute the Concordance Index."""
     ind = np.argsort(y)
     y = y[ind]
     f = f[ind]

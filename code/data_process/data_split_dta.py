@@ -10,6 +10,10 @@ from sklearn.model_selection import KFold
 
 
 def split(dataset, n_splits=5):
+    """
+    Split the dataset into k-folds with different settings: warm start,
+    drug cold start, and protein cold start.
+    """
     fpath = "../data/dta/" + dataset + "/"
     ligands = json.load(open(fpath + "ligands_can.txt"), object_pairs_hook=OrderedDict)
     proteins = json.load(open(fpath + "proteins.txt"), object_pairs_hook=OrderedDict)
@@ -30,6 +34,7 @@ def split(dataset, n_splits=5):
     )
 
     def save_fold(data, idx, name, setting):
+        """Save the data fold to a CSV file."""
         data = pd.DataFrame(data)
         data.columns = ["drug_idx", "prot_idx", "affinity"]
         data["drug_id"] = data["drug_idx"].apply(lambda x: drug_ids[int(x)])
@@ -43,6 +48,7 @@ def split(dataset, n_splits=5):
         )
 
     def split_warm(setting="warm_start"):
+        """Split the dataset with a warm-start setting."""
         kf = KFold(n_splits=n_splits, shuffle=True, random_state=0)
         idx = 0
         for train_index, test_index in kf.split(dti):
@@ -53,6 +59,7 @@ def split(dataset, n_splits=5):
             idx += 1
 
     def split_drug_cold(setting="drug_coldstart"):
+        """Split the dataset with a drug cold-start setting."""
         kf = KFold(n_splits=n_splits, shuffle=True, random_state=0)
         idx = 0
         drugs_arr = np.array(range(len(drug_ids)))
@@ -64,6 +71,7 @@ def split(dataset, n_splits=5):
             idx += 1
 
     def split_protein_cold(setting="protein_coldstart"):
+        """Split the dataset with a protein cold-start setting."""
         kf = KFold(n_splits=n_splits, shuffle=True, random_state=0)
         idx = 0
         targets_arr = np.array(range(len(prot_ids)))

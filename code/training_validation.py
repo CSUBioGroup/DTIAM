@@ -9,6 +9,9 @@ from utils import load_data, rmse, mse, pearson, spearman, ci, roc_auc, pr_auc
 
 
 def kfold_validation(task, dataset, setting, preset=None, ex_model=[]):
+    """
+    Perform k-fold validation for the given task, dataset, and setting.
+    """
     assert task in ["dti", "dta", "moa"], "task should be in ('dti', 'dta', 'moa')."
     if task == "dti":
         assert dataset in [

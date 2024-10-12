@@ -8,6 +8,10 @@ from sklearn.model_selection import KFold
 
 
 def split(dataset, n_splits=5, ratio=10):
+    """
+    Split the MOA dataset and generate k-fold splits with warm-start,
+    drug cold-start, and protein cold-start settings.
+    """
     fpath = "../data/moa/" + dataset + "/"
     drug_smi = pd.read_csv(fpath + "drug_smi.csv", sep="\t")
     tar_seq = pd.read_csv(fpath + "tar_seq.csv", sep="\t")
@@ -32,12 +36,14 @@ def split(dataset, n_splits=5, ratio=10):
     targets_arr = np.array(targets)
 
     def save_fold(data, setting, idx, name):
+        """Save the data fold to a CSV file."""
         data = pd.DataFrame(data, columns=["DrugID", "TargetID", "label"])
         fold_path = fpath + "data_folds/" + setting
         os.makedirs(fold_path, exist_ok=True)
         data.to_csv(fold_path + "/" + name + "_fold_" + str(idx) + ".csv", index=None)
 
     def split_warm(setting="warm_start"):
+        """Split the dataset with a warm-start setting."""
         kf = KFold(n_splits=n_splits, shuffle=True, random_state=0)
         idx = 0
         for train_index, test_index in kf.split(dti):
@@ -48,6 +54,7 @@ def split(dataset, n_splits=5, ratio=10):
             idx += 1
 
     def split_drug_cold(setting="drug_coldstart"):
+        """Split the dataset with a drug cold-start setting."""
         kf = KFold(n_splits=n_splits, shuffle=True, random_state=0)
         idx = 0
         for train_index, test_index in kf.split(drugs_arr):
@@ -58,6 +65,7 @@ def split(dataset, n_splits=5, ratio=10):
             idx += 1
 
     def split_protein_cold(setting="protein_coldstart"):
+        """Split the dataset with a protein cold-start setting."""
         kf = KFold(n_splits=n_splits, shuffle=True, random_state=0)
         idx = 0
         for train_index, test_index in kf.split(targets_arr):
