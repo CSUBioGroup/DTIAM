@@ -1,17 +1,19 @@
 import math
+
 import torch
 from torch import nn
-from torch.nn import CrossEntropyLoss, MultiLabelSoftMarginLoss, MSELoss
+from torch.nn import CrossEntropyLoss, MSELoss, MultiLabelSoftMarginLoss
 
 
 class MolEmbeddings(nn.Module):
-
     def __init__(self, config):
         super().__init__()
-        self.token_embeddings = nn.Embedding(config.vocab_size, config.hidden_size, padding_idx=config.pad_token_id)
+        self.token_embeddings = nn.Embedding(
+            config.vocab_size, config.hidden_size, padding_idx=config.pad_token_id
+        )
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
-    
+
     def forward(self, token_ids):
         embeddings = self.token_embeddings(token_ids)
         embeddings = self.LayerNorm(embeddings)
@@ -34,7 +36,10 @@ class BertSelfAttention(nn.Module):
         self.dropout = nn.Dropout(config.attention_probs_dropout_prob)
 
     def transpose_for_scores(self, x):
-        new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
+        new_x_shape = x.size()[:-1] + (
+            self.num_attention_heads,
+            self.attention_head_size,
+        )
         x = x.view(new_x_shape)
         return x.permute(0, 2, 1, 3)
 
@@ -45,7 +50,7 @@ class BertSelfAttention(nn.Module):
 
         attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
         attention_scores = attention_scores / math.sqrt(self.attention_head_size)
-        
+
         if attention_mask is not None:
             attention_scores = attention_scores + torch.unsqueeze(attention_mask, 1)
 
@@ -135,13 +140,14 @@ class BertEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self.layer = nn.ModuleList([BertLayer(config) for _ in range(config.num_hidden_layers)])
+        self.layer = nn.ModuleList(
+            [BertLayer(config) for _ in range(config.num_hidden_layers)]
+        )
 
     def forward(self, hidden_states, attention_mask=None):
-
         for layer_module in self.layer:
             hidden_states = layer_module(hidden_states, attention_mask)
-        
+
         return hidden_states
 
 
@@ -165,7 +171,7 @@ class BerMolEncoder(nn.Module):
         self.token_embeddings = MolEmbeddings(config)
         self.encoder = BertEncoder(config)
         self.pooler = BertPooler(config)
-    
+
     def forward(self, token_ids, attention_mask=None):
         embeddings = self.token_embeddings(token_ids)
         sequence_output = self.encoder(embeddings, attention_mask)
@@ -189,14 +195,14 @@ class MaskPredictor(nn.Module):
         self.predictor = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         self.bias = nn.Parameter(torch.zeros(config.vocab_size))
         self.predictor.bias = self.bias
-    
+
     def forward(self, sequence_output, pooled_output):
         hidden_states = self.dense(sequence_output)
         hidden_states = self.transform_act_fn(hidden_states)
         hidden_states = self.LayerNorm(hidden_states)
         prediction_scores = self.predictor(hidden_states)
         return prediction_scores
-    
+
     def compute_loss(self, predictions, labels):
         return self.loss(predictions.view(-1, self.vocab_size), labels.view(-1))
 
@@ -214,7 +220,7 @@ class MotifPredictor(nn.Module):
     def forward(self, sequence_output, pooled_output):
         prediction_scores = self.predictor(pooled_output)
         return prediction_scores
-    
+
     def compute_loss(self, predictions, labels):
         return self.loss(predictions, labels)
 
@@ -237,19 +243,21 @@ class DescPredictor(nn.Module):
     def forward(self, sequence_output, pooled_output):
         prediction_scores = self.predictor(pooled_output)
         return prediction_scores
-    
+
     def compute_loss(self, predictions, labels):
         return self.loss(predictions, labels)
 
 
 class BerMol(nn.Module):
-
     def __init__(self, task_modules: nn.ModuleList, config):
         super().__init__()
 
         self.encoder = BerMolEncoder(config)
         self.task_modules = task_modules
-    
+
     def forward(self, token_ids, attention_mask=None):
         sequence_output, pooled_output = self.encoder(token_ids, attention_mask)
-        return {task_layer.name: task_layer(sequence_output, pooled_output) for task_layer in self.task_modules}
+        return {
+            task_layer.name: task_layer(sequence_output, pooled_output)
+            for task_layer in self.task_modules
+        }

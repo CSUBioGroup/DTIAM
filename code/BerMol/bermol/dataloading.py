@@ -1,31 +1,34 @@
-import tqdm
 import random
+
 import numpy as np
 import torch
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
+import tqdm
+from torch.utils.data import DataLoader, Dataset
 
 
 class MolDataset(Dataset):
     def __init__(self, corpus_path, vocab, on_memory=True):
         super(Dataset).__init__()
-        
+
         self.corpus_path = corpus_path
         self.vocab = vocab
         self.on_memory = on_memory
-        
-        with open(corpus_path, 'r') as f:
+
+        with open(corpus_path, "r") as f:
             if on_memory:
-                self.data = [line[:-1].split('\t') for line in tqdm.tqdm(f, desc="Loading Dataset")]
+                self.data = [
+                    line[:-1].split("\t")
+                    for line in tqdm.tqdm(f, desc="Loading Dataset")
+                ]
                 self.len = len(self.data)
             else:
                 self.len = 0
                 for _ in tqdm.tqdm(f, desc="Loading Dataset"):
                     self.len += 1
-        
+
         if not on_memory:
-            self.file = open(corpus_path, 'r')
-    
+            self.file = open(corpus_path, "r")
+
     def __len__(self):
         return self.len
 
@@ -37,10 +40,10 @@ class MolDataset(Dataset):
                 line = self.file.__next__()
             except:
                 self.file.close()
-                self.file = open(self.corpus_path, 'r')
+                self.file = open(self.corpus_path, "r")
                 line = self.file.__next__()
-            
-            sentence, fgs, desc = line[:-1].split('\t')
+
+            sentence, fgs, desc = line[:-1].split("\t")
 
         token_ids, mask_labels = self.replace_mask_tokens(sentence)
         token_ids = [self.vocab.cls_index] + token_ids + [self.vocab.sep_index]
@@ -53,7 +56,7 @@ class MolDataset(Dataset):
             "token_ids": np.array(token_ids),
             "mask_labels": np.array(mask_labels),
             "fg_labels": np.array(fg_labels),
-            "desc_labels": np.array(desc_labels, dtype=np.float32)
+            "desc_labels": np.array(desc_labels, dtype=np.float32),
         }
         return output
 
@@ -84,7 +87,7 @@ class MolDataset(Dataset):
                 labels.append(self.vocab.pad_index)
 
         return tokens, labels
-    
+
     def prepare_motif(self, fgs):
         fgs = fgs.split()
         fg_labels = [0] * len(self.vocab.fgtoi)
@@ -96,13 +99,13 @@ class MolDataset(Dataset):
 
 def collate_batch(batch):
     maxn = max([item["token_ids"].shape[0] for item in batch])
-    
+
     token_ids = np.zeros((len(batch), maxn))
     attention_mask = np.zeros((len(batch), maxn, maxn)) - 10000.0
     mask_labels = np.zeros((len(batch), maxn))
     fg_labels = np.zeros((len(batch), len(batch[0]["fg_labels"])))
     desc_labels = np.zeros((len(batch), len(batch[0]["desc_labels"])))
-    
+
     for i, item in enumerate(batch):
         n = item["token_ids"].shape[0]
 
@@ -111,20 +114,28 @@ def collate_batch(batch):
         mask_labels[i, :n] = item["mask_labels"]
         fg_labels[i, :] = item["fg_labels"]
         desc_labels[i, :] = item["desc_labels"]
-    
+
     output = {
-        "token_ids": torch.LongTensor(token_ids), 
-        "attention_mask": torch.FloatTensor(attention_mask), 
+        "token_ids": torch.LongTensor(token_ids),
+        "attention_mask": torch.FloatTensor(attention_mask),
         "mask_task": torch.LongTensor(mask_labels),
-        "motif_task": torch.LongTensor(fg_labels), 
-        "desc_task": torch.FloatTensor(desc_labels)
+        "motif_task": torch.LongTensor(fg_labels),
+        "desc_task": torch.FloatTensor(desc_labels),
     }
-    
+
     return output
 
 
-def mol_dataloader(corpus_path, vocab, batch_size=64, shuffle=False, num_workers=8, on_memory=True):
+def mol_dataloader(
+    corpus_path, vocab, batch_size=64, shuffle=False, num_workers=8, on_memory=True
+):
     dataset = MolDataset(corpus_path, vocab, on_memory)
     if not on_memory:
         num_workers = 1
-    return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers, collate_fn=collate_batch)
+    return DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=num_workers,
+        collate_fn=collate_batch,
+    )

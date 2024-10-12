@@ -1,26 +1,24 @@
 import numpy as np
-from torch.optim.lr_scheduler import LambdaLR
-from rdkit import RDLogger
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import Descriptors
+from rdkit import Chem, RDLogger
+from rdkit.Chem import AllChem, Descriptors
 from rdkit.Chem.FilterCatalog import GetFunctionalGroupHierarchy
 from rdkit.ML.Descriptors.MoleculeDescriptors import MolecularDescriptorCalculator
-from bermol.model import MaskPredictor, MotifPredictor, DescPredictor
+from torch.optim.lr_scheduler import LambdaLR
 
+from bermol.model import DescPredictor, MaskPredictor, MotifPredictor
 
 TASK_DICT = {
-    "mask_task": MaskPredictor, 
+    "mask_task": MaskPredictor,
     "motif_task": MotifPredictor,
-    "desc_task": DescPredictor
+    "desc_task": DescPredictor,
 }
 
 
 def smi_to_mol(smiles):
     try:
-        RDLogger.DisableLog('rdApp.*')
+        RDLogger.DisableLog("rdApp.*")
         mol = Chem.MolFromSmiles(smiles)
-        smi = Chem.MolToSmiles(mol)  # standardize 
+        smi = Chem.MolToSmiles(mol)  # standardize
         mol = Chem.MolFromSmiles(smi)
         return mol
     except:
@@ -32,12 +30,12 @@ def mol_to_sentence(mol, radius=1):
     AllChem.GetMorganFingerprint(mol, radius, bitInfo=info)
 
     mol_atoms = [a.GetIdx() for a in mol.GetAtoms()]
-    atom_dic = {x: {r: None for r in range(radius+1)} for x in mol_atoms}
+    atom_dic = {x: {r: None for r in range(radius + 1)} for x in mol_atoms}
 
     for element in info:
         for atom_idx, r in info[element]:
             atom_dic[atom_idx][r] = element
-    
+
     sentence = []
     for atom in atom_dic:
         if atom_dic[atom][radius]:
@@ -47,19 +45,21 @@ def mol_to_sentence(mol, radius=1):
 
 def get_functional_gropus(mol):
     functionalGroups = GetFunctionalGroupHierarchy()
-    fgs = [match.filterMatch.GetName() for match in functionalGroups.GetFilterMatches(mol)]
+    fgs = [
+        match.filterMatch.GetName() for match in functionalGroups.GetFilterMatches(mol)
+    ]
     return fgs
 
 
 def get_molecular_descriptor(mol):
     descriptor = sorted([x[0] for x in Descriptors._descList])
-    
+
     desc_calc = MolecularDescriptorCalculator(descriptor)
     desc = desc_calc.CalcDescriptors(mol)
     desc = np.array(desc)
     desc[~np.isfinite(desc)] = 0
-    
-    desc = (desc - distributions['min']) / distributions['scale']
+
+    desc = (desc - distributions["min"]) / distributions["scale"]
     desc = np.clip(desc, 0, 1)
     return list(desc.astype(str))
 
@@ -68,23 +68,28 @@ def parall_build(smi, max_len=64):
     mol = smi_to_mol(smi)
     if mol is None:
         return
-    
+
     sentence = mol_to_sentence(mol)
     if not sentence:
         return
-    
+
     fgs = get_functional_gropus(mol)
     desc = get_molecular_descriptor(mol)
     return sentence[:max_len], fgs, desc
 
 
-def get_linear_schedule_with_warmup(optimizer, num_warmup_steps, num_training_steps, last_epoch=-1):
-    
+def get_linear_schedule_with_warmup(
+    optimizer, num_warmup_steps, num_training_steps, last_epoch=-1
+):
     def lr_lambda(current_step: int):
         if current_step < num_warmup_steps:
             return float(current_step) / float(max(1, num_warmup_steps))
-        return max(0.0, float(num_training_steps - current_step) / float(max(1, num_training_steps - num_warmup_steps)))
-    
+        return max(
+            0.0,
+            float(num_training_steps - current_step)
+            / float(max(1, num_training_steps - num_warmup_steps)),
+        )
+
     return LambdaLR(optimizer, lr_lambda, last_epoch)
 
 
@@ -340,7 +345,4 @@ desc_scale = [
     0.940810852506316
 ]
 
-distributions = {
-    'min': np.array(desc_min),
-    'scale': np.array(desc_scale)
-}
+distributions = {"min": np.array(desc_min), "scale": np.array(desc_scale)}
