@@ -10,7 +10,7 @@ from tqdm import tqdm
 from collections import OrderedDict
 
 
-def cal_comp_feat(data, model_path, device="cuda"):
+def cal_comp_feat(data: pd.DataFrame, model_path: str, device: str = "cuda") -> dict:
     """
     Calculate the compound features using the compound pre-trained model
     """
@@ -32,7 +32,7 @@ def cal_comp_feat(data, model_path, device="cuda"):
     return comp_feat
 
 
-def cal_prot_feat(data):
+def cal_prot_feat(data: pd.DataFrame) -> dict:
     """
     Calculate the protein features using the protein pre-trained model
     """
@@ -65,7 +65,7 @@ def cal_prot_feat(data):
     return prot_feat
 
 
-def extract_dti():
+def extract_dti() -> None:
     for dataset in ["yamanishi_08", "hetionet"]:
         data_path = "../data/dti/" + dataset + "/"
         save_path = data_path + "features/"
@@ -95,7 +95,7 @@ def extract_dti():
             pickle.dump(prot_feat, f)
 
 
-def extract_dta():
+def extract_dta() -> None:
     for dataset in ["davis", "kiba"]:
         data_path = "../data/dta/" + dataset + "/"
         save_path = data_path + "features/"
@@ -120,7 +120,7 @@ def extract_dta():
             pickle.dump(prot_feat, f)
 
 
-def extract_moa():
+def extract_moa() -> None:
     for dataset in ["activation", "inhibition"]:
         data_path = "../data/moa/" + dataset + "/"
         save_path = data_path + "features/"

@@ -2,13 +2,14 @@ import numpy as np
 import torch
 
 from bermol.utils import mol_to_sentence, smi_to_mol
+from bermol.vocab import MolVocab
 
 
 class BerMolTokenizer:
-    def __init__(self, vocab) -> None:
+    def __init__(self, vocab: MolVocab) -> None:
         self.vocab = vocab
 
-    def encode(self, smiles):
+    def encode(self, smiles: str) -> torch.Tensor:
         mol = smi_to_mol(smiles)
         if mol is None:
             raise Exception("invalid smiles, please check the imput smiles!")
@@ -18,7 +19,7 @@ class BerMolTokenizer:
         token_ids = torch.LongTensor(token_ids)
         return torch.unsqueeze(token_ids, 0)
 
-    def sentence_to_token(self, sentence):
+    def sentence_to_token(self, sentence: list) -> np.array:
         token_ids = [
             self.vocab.stoi.get(token, self.vocab.unk_index) for token in sentence
         ]

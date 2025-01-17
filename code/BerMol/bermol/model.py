@@ -1,4 +1,5 @@
 import math
+import argparse
 
 import torch
 from torch import nn
@@ -6,7 +7,7 @@ from torch.nn import CrossEntropyLoss, MSELoss, MultiLabelSoftMarginLoss
 
 
 class MolEmbeddings(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config: argparse.Namespace) -> None:
         super().__init__()
         self.token_embeddings = nn.Embedding(
             config.vocab_size, config.hidden_size, padding_idx=config.pad_token_id
@@ -14,7 +15,7 @@ class MolEmbeddings(nn.Module):
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
-    def forward(self, token_ids):
+    def forward(self, token_ids: torch.Tensor) -> torch.Tensor:
         embeddings = self.token_embeddings(token_ids)
         embeddings = self.LayerNorm(embeddings)
         embeddings = self.dropout(embeddings)
@@ -22,7 +23,7 @@ class MolEmbeddings(nn.Module):
 
 
 class BertSelfAttention(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config: argparse.Namespace) -> None:
         super().__init__()
 
         self.num_attention_heads = config.num_attention_heads
@@ -35,7 +36,7 @@ class BertSelfAttention(nn.Module):
 
         self.dropout = nn.Dropout(config.attention_probs_dropout_prob)
 
-    def transpose_for_scores(self, x):
+    def transpose_for_scores(self, x: torch.Tensor) -> torch.Tensor:
         new_x_shape = x.size()[:-1] + (
             self.num_attention_heads,
             self.attention_head_size,
@@ -43,7 +44,7 @@ class BertSelfAttention(nn.Module):
         x = x.view(new_x_shape)
         return x.permute(0, 2, 1, 3)
 
-    def forward(self, hidden_states, attention_mask=None):
+    def forward(self, hidden_states: torch.Tensor, attention_mask: torch.Tensor = None) -> torch.Tensor:
         query_layer = self.transpose_for_scores(self.query(hidden_states))
         key_layer = self.transpose_for_scores(self.key(hidden_states))
         value_layer = self.transpose_for_scores(self.value(hidden_states))
@@ -66,13 +67,13 @@ class BertSelfAttention(nn.Module):
 
 
 class BertSelfOutput(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config: argparse.Namespace) -> None:
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
-    def forward(self, hidden_states, input_tensor):
+    def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
         hidden_states = self.LayerNorm(hidden_states + input_tensor)
@@ -80,38 +81,38 @@ class BertSelfOutput(nn.Module):
 
 
 class BertAttention(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config: argparse.Namespace) -> None:
         super().__init__()
         self.selfatt = BertSelfAttention(config)
         self.output = BertSelfOutput(config)
         self.pruned_heads = set()
 
-    def forward(self, hidden_states, attention_mask=None):
+    def forward(self, hidden_states: torch.Tensor, attention_mask: torch.Tensor = None) -> torch.Tensor:
         self_outputs = self.selfatt(hidden_states, attention_mask)
         outputs = self.output(self_outputs, hidden_states)
         return outputs
 
 
 class BertIntermediate(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config: argparse.Namespace) -> None:
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
         self.intermediate_act_fn = nn.functional.gelu
 
-    def forward(self, hidden_states):
+    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.intermediate_act_fn(hidden_states)
         return hidden_states
 
 
 class BertOutput(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config: argparse.Namespace) -> None:
         super().__init__()
         self.dense = nn.Linear(config.intermediate_size, config.hidden_size)
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
-    def forward(self, hidden_states, input_tensor):
+    def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
         hidden_states = self.LayerNorm(hidden_states + input_tensor)
@@ -119,32 +120,32 @@ class BertOutput(nn.Module):
 
 
 class BertLayer(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config: argparse.Namespace) -> None:
         super().__init__()
         self.attention = BertAttention(config)
         self.intermediate = BertIntermediate(config)
         self.output = BertOutput(config)
 
-    def forward(self, hidden_states, attention_mask=None):
+    def forward(self, hidden_states: torch.Tensor, attention_mask: torch.Tensor = None) -> torch.Tensor:
         attention_output = self.attention(hidden_states, attention_mask)
         layer_output = self.feed_forward_chunk(attention_output)
         return layer_output
 
-    def feed_forward_chunk(self, attention_output):
+    def feed_forward_chunk(self, attention_output: torch.Tensor) -> torch.Tensor:
         intermediate_output = self.intermediate(attention_output)
         layer_output = self.output(intermediate_output, attention_output)
         return layer_output
 
 
 class BertEncoder(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config: argparse.Namespace) -> None:
         super().__init__()
         self.config = config
         self.layer = nn.ModuleList(
             [BertLayer(config) for _ in range(config.num_hidden_layers)]
         )
 
-    def forward(self, hidden_states, attention_mask=None):
+    def forward(self, hidden_states: torch.Tensor, attention_mask: torch.Tensor = None) -> torch.Tensor:
         for layer_module in self.layer:
             hidden_states = layer_module(hidden_states, attention_mask)
 
@@ -152,12 +153,12 @@ class BertEncoder(nn.Module):
 
 
 class BertPooler(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config: argparse.Namespace) -> None:
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.activation = nn.Tanh()
 
-    def forward(self, sequence_output):
+    def forward(self, sequence_output: torch.Tensor) -> torch.Tensor:
         first_token_tensor = sequence_output[:, 0]
         pooled_output = self.dense(first_token_tensor)
         pooled_output = self.activation(pooled_output)
@@ -165,14 +166,14 @@ class BertPooler(nn.Module):
 
 
 class BerMolEncoder(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config: argparse.Namespace) -> None:
         super().__init__()
 
         self.token_embeddings = MolEmbeddings(config)
         self.encoder = BertEncoder(config)
         self.pooler = BertPooler(config)
 
-    def forward(self, token_ids, attention_mask=None):
+    def forward(self, token_ids: torch.Tensor, attention_mask: torch.Tensor = None) -> torch.Tensor:
         embeddings = self.token_embeddings(token_ids)
         sequence_output = self.encoder(embeddings, attention_mask)
         pooled_output = self.pooler(sequence_output)
@@ -180,7 +181,7 @@ class BerMolEncoder(nn.Module):
 
 
 class MaskPredictor(nn.Module):
-    def __init__(self, name, config):
+    def __init__(self, name, config: argparse.Namespace) -> None:
         super().__init__()
 
         self.name = name
@@ -196,19 +197,19 @@ class MaskPredictor(nn.Module):
         self.bias = nn.Parameter(torch.zeros(config.vocab_size))
         self.predictor.bias = self.bias
 
-    def forward(self, sequence_output, pooled_output):
+    def forward(self, sequence_output: torch.Tensor, pooled_output: torch.Tensor) -> torch.Tensor:
         hidden_states = self.dense(sequence_output)
         hidden_states = self.transform_act_fn(hidden_states)
         hidden_states = self.LayerNorm(hidden_states)
         prediction_scores = self.predictor(hidden_states)
         return prediction_scores
 
-    def compute_loss(self, predictions, labels):
+    def compute_loss(self, predictions: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
         return self.loss(predictions.view(-1, self.vocab_size), labels.view(-1))
 
 
 class MotifPredictor(nn.Module):
-    def __init__(self, name, config):
+    def __init__(self, name, config: argparse.Namespace) -> None:
         super().__init__()
 
         self.name = name
@@ -217,16 +218,16 @@ class MotifPredictor(nn.Module):
         self.motif_size = config.motif_size
         self.predictor = nn.Linear(config.hidden_size, config.motif_size)
 
-    def forward(self, sequence_output, pooled_output):
+    def forward(self, sequence_output: torch.Tensor, pooled_output: torch.Tensor) -> torch.Tensor:
         prediction_scores = self.predictor(pooled_output)
         return prediction_scores
 
-    def compute_loss(self, predictions, labels):
+    def compute_loss(self, predictions: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
         return self.loss(predictions, labels)
 
 
 class DescPredictor(nn.Module):
-    def __init__(self, name, config):
+    def __init__(self, name, config: argparse.Namespace) -> None:
         super().__init__()
 
         self.name = name
@@ -240,22 +241,22 @@ class DescPredictor(nn.Module):
             nn.Linear(config.hidden_size, config.desc_size),
         )
 
-    def forward(self, sequence_output, pooled_output):
+    def forward(self, sequence_output: torch.Tensor, pooled_output: torch.Tensor) -> torch.Tensor:
         prediction_scores = self.predictor(pooled_output)
         return prediction_scores
 
-    def compute_loss(self, predictions, labels):
+    def compute_loss(self, predictions: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
         return self.loss(predictions, labels)
 
 
 class BerMol(nn.Module):
-    def __init__(self, task_modules: nn.ModuleList, config):
+    def __init__(self, task_modules: nn.ModuleList, config: argparse.Namespace) -> None:
         super().__init__()
 
         self.encoder = BerMolEncoder(config)
         self.task_modules = task_modules
 
-    def forward(self, token_ids, attention_mask=None):
+    def forward(self, token_ids: torch.Tensor, attention_mask: torch.Tensor = None) -> dict:
         sequence_output, pooled_output = self.encoder(token_ids, attention_mask)
         return {
             task_layer.name: task_layer(sequence_output, pooled_output)

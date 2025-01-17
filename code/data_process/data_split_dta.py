@@ -9,7 +9,7 @@ from rdkit import Chem
 from sklearn.model_selection import KFold
 
 
-def split(dataset, n_splits=5):
+def split(dataset: str, n_splits: int = 5) -> None:
     """
     Split the dataset into k-folds with different settings: warm start,
     drug cold start, and protein cold start.
@@ -33,7 +33,7 @@ def split(dataset, n_splits=5):
         [(rows[i], cols[i], affinity[rows[i], cols[i]]) for i in range(len(rows))]
     )
 
-    def save_fold(data, idx, name, setting):
+    def save_fold(data: np.ndarray, idx: int, name: str, setting: str) -> None:
         """Save the data fold to a CSV file."""
         data = pd.DataFrame(data)
         data.columns = ["drug_idx", "prot_idx", "affinity"]
@@ -47,7 +47,7 @@ def split(dataset, n_splits=5):
             fold_path + "/" + name + "_fold_" + str(idx) + ".csv", index=None
         )
 
-    def split_warm(setting="warm_start"):
+    def split_warm(setting: str = "warm_start") -> None:
         """Split the dataset with a warm-start setting."""
         kf = KFold(n_splits=n_splits, shuffle=True, random_state=0)
         idx = 0
@@ -58,7 +58,7 @@ def split(dataset, n_splits=5):
             save_fold(dti_test, idx, "test", setting)
             idx += 1
 
-    def split_drug_cold(setting="drug_coldstart"):
+    def split_drug_cold(setting: str = "drug_coldstart") -> None:
         """Split the dataset with a drug cold-start setting."""
         kf = KFold(n_splits=n_splits, shuffle=True, random_state=0)
         idx = 0
@@ -70,7 +70,7 @@ def split(dataset, n_splits=5):
             save_fold(dti_test, idx, "test", setting)
             idx += 1
 
-    def split_protein_cold(setting="protein_coldstart"):
+    def split_protein_cold(setting: str = "protein_coldstart") -> None:
         """Split the dataset with a protein cold-start setting."""
         kf = KFold(n_splits=n_splits, shuffle=True, random_state=0)
         idx = 0

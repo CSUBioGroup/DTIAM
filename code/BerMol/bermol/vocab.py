@@ -1,5 +1,6 @@
 import pickle
 import dill as pickle
+import argparse
 from tqdm import tqdm
 from collections import defaultdict
 from joblib import Parallel, delayed
@@ -8,7 +9,7 @@ from bermol.utils import parall_build
 
 
 class MolVocab:
-    def __init__(self, config, specials=["<pad>", "<unk>", "<cls>", "<sep>", "<mask>"]):
+    def __init__(self, config: argparse.Namespace, specials: list = ["<pad>", "<unk>", "<cls>", "<sep>", "<mask>"]) -> None:
         self.pad_index = 0
         self.unk_index = 1
         self.cls_index = 2
@@ -23,7 +24,7 @@ class MolVocab:
         self.max_len = config.max_len
         self.min_freq = config.min_freq
 
-    def build_corpus(self, mol_path, corpus_path=None, update=True):
+    def build_corpus(self, mol_path: str, corpus_path: str = None, update: bool = True) -> "MolVocab":
         print("Building Vocab and Corpus...")
         if corpus_path is None:
             corpus_path = mol_path + ".corpus"
@@ -66,10 +67,10 @@ class MolVocab:
         )
         return self
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.stoi)
 
-    def save_vocab(self, vocab_path, silent=False):
+    def save_vocab(self, vocab_path: str, silent: bool = False) -> None:
         with open(vocab_path, "wb") as f:
             pickle.dump(self, f)
         if not silent:
@@ -84,7 +85,6 @@ class MolVocab:
 
 
 def build():
-    import argparse
 
     parser = argparse.ArgumentParser()
 

@@ -1,3 +1,4 @@
+from typing import Tuple, Dict
 from math import sqrt
 
 import numpy as np
@@ -6,7 +7,7 @@ from scipy import stats
 from sklearn import metrics
 
 
-def load_data(data_path, fold_idx, comp_feat, prot_feat):
+def load_data(data_path: str, fold_idx: int, comp_feat: Dict, prot_feat: Dict) -> Tuple:
     """Load training and testing data."""
     print("Loading data ...")
     train = pd.read_csv(data_path + "train_fold_" + str(fold_idx) + ".csv")
@@ -16,7 +17,7 @@ def load_data(data_path, fold_idx, comp_feat, prot_feat):
     return pack(train, comp_feat, prot_feat), pack(test, comp_feat, prot_feat)
 
 
-def pack(data, comp_feat, prot_feat):
+def pack(data: pd.DataFrame, comp_feat: Dict, prot_feat: Dict) -> pd.DataFrame:
     """Pack compound and protein features into a dataframe."""
     vecs = []
     for i in range(len(data)):
@@ -27,45 +28,45 @@ def pack(data, comp_feat, prot_feat):
     return vecs_df
 
 
-def roc_auc(y, pred):
+def roc_auc(y: np.ndarray, pred: np.ndarray) -> float:
     """Compute the ROC AUC score."""
     fpr, tpr, _ = metrics.roc_curve(y, pred)
     roc_auc = metrics.auc(fpr, tpr)
     return roc_auc
 
 
-def pr_auc(y, pred):
+def pr_auc(y: np.ndarray, pred: np.ndarray) -> float:
     """Compute the Precision-Recall AUC score."""
     precision, recall, _ = metrics.precision_recall_curve(y, pred)
     pr_auc = metrics.auc(recall, precision)
     return pr_auc
 
 
-def rmse(y, f):
+def rmse(y: np.ndarray, f: np.ndarray) -> float:
     """Compute the Root Mean Squared Error."""
     rmse = sqrt(((y - f) ** 2).mean(axis=0))
     return rmse
 
 
-def mse(y, f):
+def mse(y: np.ndarray, f: np.ndarray) -> float:
     """Compute the Mean Squared Error."""
     mse = ((y - f) ** 2).mean(axis=0)
     return mse
 
 
-def pearson(y, f):
+def pearson(y: np.ndarray, f: np.ndarray) -> float:
     """Compute the Pearson correlation coefficient."""
     rp = np.corrcoef(y, f)[0, 1]
     return rp
 
 
-def spearman(y, f):
+def spearman(y: np.ndarray, f: np.ndarray) -> float:
     """Compute the Spearman correlation coefficient."""
     rs = stats.spearmanr(y, f)[0]
     return rs
 
 
-def ci(y, f):
+def ci(y: np.ndarray, f: np.ndarray) -> float:
     """Compute the Concordance Index."""
     ind = np.argsort(y)
     y = y[ind]

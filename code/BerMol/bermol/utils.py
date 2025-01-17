@@ -14,7 +14,7 @@ TASK_DICT = {
 }
 
 
-def smi_to_mol(smiles):
+def smi_to_mol(smiles: str) -> Chem.Mol:
     try:
         RDLogger.DisableLog("rdApp.*")
         mol = Chem.MolFromSmiles(smiles)
@@ -25,7 +25,7 @@ def smi_to_mol(smiles):
         return None
 
 
-def mol_to_sentence(mol, radius=1):
+def mol_to_sentence(mol: Chem.Mol, radius: int = 1) -> list:
     info = {}
     AllChem.GetMorganFingerprint(mol, radius, bitInfo=info)
 
@@ -43,7 +43,7 @@ def mol_to_sentence(mol, radius=1):
     return sentence
 
 
-def get_functional_gropus(mol):
+def get_functional_gropus(mol: Chem.Mol) -> list:
     functionalGroups = GetFunctionalGroupHierarchy()
     fgs = [
         match.filterMatch.GetName() for match in functionalGroups.GetFilterMatches(mol)
@@ -51,7 +51,7 @@ def get_functional_gropus(mol):
     return fgs
 
 
-def get_molecular_descriptor(mol):
+def get_molecular_descriptor(mol: Chem.Mol) -> list:
     descriptor = sorted([x[0] for x in Descriptors._descList])
 
     desc_calc = MolecularDescriptorCalculator(descriptor)
@@ -64,7 +64,7 @@ def get_molecular_descriptor(mol):
     return list(desc.astype(str))
 
 
-def parall_build(smi, max_len=64):
+def parall_build(smi: str, max_len: int = 64) -> tuple:
     mol = smi_to_mol(smi)
     if mol is None:
         return

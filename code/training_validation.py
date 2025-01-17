@@ -8,7 +8,7 @@ from autogluon.tabular import TabularPredictor
 from utils import load_data, rmse, mse, pearson, spearman, ci, roc_auc, pr_auc
 
 
-def kfold_validation(task, dataset, setting, preset=None, ex_model=[]):
+def kfold_validation(task: str, dataset: str, setting: str, preset=None, ex_model=[]) -> None:
     """
     Perform k-fold validation for the given task, dataset, and setting.
     """

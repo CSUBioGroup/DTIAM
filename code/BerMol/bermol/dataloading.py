@@ -4,10 +4,11 @@ import numpy as np
 import torch
 import tqdm
 from torch.utils.data import DataLoader, Dataset
+from bermol.vocab import MolVocab
 
 
 class MolDataset(Dataset):
-    def __init__(self, corpus_path, vocab, on_memory=True):
+    def __init__(self, corpus_path: str, vocab: MolVocab, on_memory: bool = True) -> None:
         super(Dataset).__init__()
 
         self.corpus_path = corpus_path
@@ -29,10 +30,10 @@ class MolDataset(Dataset):
         if not on_memory:
             self.file = open(corpus_path, "r")
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.len
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: int) -> dict:
         if self.on_memory:
             sentence, fgs, desc = self.data[item]
         else:
@@ -60,7 +61,7 @@ class MolDataset(Dataset):
         }
         return output
 
-    def replace_mask_tokens(self, sentence):
+    def replace_mask_tokens(self, sentence: str) -> tuple:
         tokens = sentence.split()
         labels = []
         for i, token in enumerate(tokens):
@@ -88,7 +89,7 @@ class MolDataset(Dataset):
 
         return tokens, labels
 
-    def prepare_motif(self, fgs):
+    def prepare_motif(self, fgs: str) -> list:
         fgs = fgs.split()
         fg_labels = [0] * len(self.vocab.fgtoi)
         for fg in fgs:
@@ -127,8 +128,8 @@ def collate_batch(batch):
 
 
 def mol_dataloader(
-    corpus_path, vocab, batch_size=64, shuffle=False, num_workers=8, on_memory=True
-):
+    corpus_path: str, vocab: MolVocab, batch_size: int = 64, shuffle: bool = False, num_workers: int = 8, on_memory: bool = True
+) -> DataLoader:
     dataset = MolDataset(corpus_path, vocab, on_memory)
     if not on_memory:
         num_workers = 1

@@ -1,18 +1,21 @@
 import os
 import pickle
 import dill as pickle
+import argparse
 import torch
 from torch import nn
 import torch.optim as optim
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 from bermol.model import BerMol
 from bermol.dataloading import mol_dataloader
 from bermol.utils import TASK_DICT, get_linear_schedule_with_warmup
 from bermol.tokenizer import BerMolTokenizer
+from bermol.vocab import MolVocab
 
 
 class BerMolPreTrainer:
-    def __init__(self, task_list, vocab, config):
+    def __init__(self, task_list: list, vocab: MolVocab, config: argparse.Namespace) -> None:
         task_modules = nn.ModuleList(
             [TASK_DICT[name](name, config) for name in task_list]
         )
@@ -26,7 +29,7 @@ class BerMolPreTrainer:
         self.set_path(config.bermol_path)
         self.config = config
 
-    def train(self, train_corpus_path, val_corpus_path=None, on_memory=True):
+    def train(self, train_corpus_path: str, val_corpus_path: str = None, on_memory: bool = True):
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.config.lr)
         train_iter = mol_dataloader(
             train_corpus_path,
@@ -68,7 +71,7 @@ class BerMolPreTrainer:
         self.save()
         return self
 
-    def iteration(self, data_iter, train=True):
+    def iteration(self, data_iter: DataLoader, train: bool = True) -> float:
         total_loss = 0
         data_bar = tqdm(data_iter) if train else data_iter
         for batch in data_bar:
@@ -111,13 +114,13 @@ class BerMolPreTrainer:
         )
         return scheduler
 
-    def transform(self, smiles, device="cpu"):
+    def transform(self, smiles: str, device: str = "cpu") -> tuple:
         tokenizer = BerMolTokenizer(self.vocab)
         token_ids = tokenizer.encode(smiles)
         sequence_output, pooled_output = self.model.encoder(token_ids.to(device))
         return sequence_output, pooled_output
 
-    def set_path(self, path):
+    def set_path(self, path: str) -> None:
         if path is None:
             import datetime
 
@@ -134,10 +137,10 @@ class BerMolPreTrainer:
     def save_model(self):
         torch.save(self.model, self.path + "best_model.pth")
 
-    def load_model(self, path):
+    def load_model(self, path: str):
         return torch.load(path + "best_model.pth")
 
-    def save(self, epoch=None, silent=False):
+    def save(self, epoch: int = None, silent: bool = False) -> None:
         file_name = (
             "BerMolModel_epoch" + str(epoch) + ".pkl"
             if epoch is not None
@@ -151,7 +154,7 @@ class BerMolPreTrainer:
             )
 
     @staticmethod
-    def load(path, name=None) -> "BerMolPreTrainer":
+    def load(path: str, name: str = None):
         file_name = name if name is not None else "BerMolModel.pkl"
         with open(path + file_name, "rb") as f:
             predictor = pickle.load(f)
@@ -160,8 +163,6 @@ class BerMolPreTrainer:
 
 
 def train():
-    import argparse
-    from bermol.vocab import MolVocab
 
     parser = argparse.ArgumentParser()
 
